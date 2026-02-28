@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+<body>
+<h3>Supabase token fetch</h3>
+<button id="go">Sign in & print token</button>
+<pre id="out"></pre>
+
+<script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+    const supabaseUrl = "https://pldrhwrqneoigvwduupl.supabase.co";
+    const anonKey = "sb_publishable_C9fhTM44405MEEEOJ6bVtQ_22bhMU6H";
+    const supabase = createClient(supabaseUrl, anonKey);
+
+    const email = "strugaricristian9@gmail.com";
+    const password = "sasesase";
+
+    document.getElementById("go").onclick = async () => {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        document.getElementById("out").textContent =
+            error ? JSON.stringify(error, null, 2) : data.session.access_token;
+    };
+</script>
+</body>
+</html>

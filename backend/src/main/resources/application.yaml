@@ -1,0 +1,25 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: ${POSEFIX_DB_URL}
+    username: ${POSEFIX_DB_USER}
+    password: ${POSEFIX_DB_PASS}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+logging:
+  level:
+    org.hibernate.SQL: info
+
+supabase:
+  url: ${SUPABASE_URL}
+  serviceKey: ${SUPABASE_SERVICE_ROLE_KEY}
