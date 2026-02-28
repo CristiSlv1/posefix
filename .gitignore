@@ -1,0 +1,22 @@
+# General
+.env
+*.log
+
+# Java
+backend/target/
+backend/.idea/
+backend/*.iml
+
+# Flutter
+mobile/build/
+mobile/.dart_tool/
+mobile/.idea/
+
+# Python
+ml-service/venv/
+ml-service/__pycache__/
+ml-service/.env
+
+# OS
+.DS_Store
+Thumbs.db
