@@ -1,10 +1,7 @@
 package com.cristislv1.backend.workout;
 
-import com.cristislv1.backend.auth.SupabaseAuthService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -16,29 +13,16 @@ import java.util.UUID;
 public class WorkoutController {
 
     private final WorkoutRepository repo;
-    private final SupabaseAuthService auth;
 
-    public WorkoutController(WorkoutRepository repo, SupabaseAuthService auth) {
+    public WorkoutController(WorkoutRepository repo) {
         this.repo = repo;
-        this.auth = auth;
-    }
-
-    private UUID requireUserId(String authorization) {
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing Bearer token");
-        }
-        var token = authorization.substring("Bearer ".length());
-        var user = auth.getUser(token).block();
-        if (user == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
-        return UUID.fromString(user.id());
     }
 
     @PostMapping
     public Map<String, Object> create(
-            @RequestHeader("Authorization") String authorization,
-            @Valid @RequestBody CreateWorkoutRequest req
-    ) {
-        UUID userId = requireUserId(authorization);
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.cristislv1.backend.auth.SupabaseAuthService.SupabaseUser principal,
+            @Valid @RequestBody CreateWorkoutRequest req) {
+        UUID userId = UUID.fromString(principal.id());
 
         Workout w = new Workout();
         w.setUserId(userId);
@@ -58,8 +42,19 @@ public class WorkoutController {
     }
 
     @GetMapping
-    public List<Workout> list(@RequestHeader("Authorization") String authorization) {
-        UUID userId = requireUserId(authorization);
+    public List<Workout> list(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.cristislv1.backend.auth.SupabaseAuthService.SupabaseUser principal) {
+        UUID userId = UUID.fromString(principal.id());
         return repo.findByUserIdOrderByPerformedAtDesc(userId);
+    }
+
+    @GetMapping("/{id}")
+    public Workout getById(
+            @PathVariable Long id,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.cristislv1.backend.auth.SupabaseAuthService.SupabaseUser principal) {
+        UUID userId = UUID.fromString(principal.id());
+        return repo.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Workout not found or access denied"));
     }
 }

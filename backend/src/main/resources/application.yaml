@@ -15,6 +15,16 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+app:
+  storage:
+    upload-dir: ./uploads
+  ml-service:
+    url: http://localhost:5000
 
 logging:
   level:

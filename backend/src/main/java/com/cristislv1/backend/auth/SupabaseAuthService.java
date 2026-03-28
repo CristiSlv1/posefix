@@ -12,8 +12,7 @@ public class SupabaseAuthService {
 
     public SupabaseAuthService(
             @Value("${supabase.url}") String supabaseUrl,
-            @Value("${supabase.serviceKey}") String serviceKey
-    ) {
+            @Value("${supabase.serviceKey}") String serviceKey) {
         this.client = WebClient.builder()
                 .baseUrl(supabaseUrl)
                 .defaultHeader("apikey", serviceKey)
@@ -28,5 +27,40 @@ public class SupabaseAuthService {
                 .bodyToMono(SupabaseUser.class);
     }
 
-    public record SupabaseUser(String id, String email) {}
+    public static class SupabaseUser {
+        private String id;
+        private String email;
+
+        public SupabaseUser() {
+        }
+
+        public SupabaseUser(String id, String email) {
+            this.id = id;
+            this.email = email;
+        }
+
+        public String id() {
+            return id;
+        }
+
+        public String email() {
+            return email;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public void setId(String id) {
+            this.id = id;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+
+        public void setEmail(String email) {
+            this.email = email;
+        }
+    }
 }

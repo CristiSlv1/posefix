@@ -6,4 +6,6 @@ import java.util.UUID;
 
 public interface WorkoutRepository extends JpaRepository<Workout, Long> {
     List<Workout> findByUserIdOrderByPerformedAtDesc(UUID userId);
+
+    java.util.Optional<Workout> findByIdAndUserId(Long id, UUID userId);
 }
