@@ -9,6 +9,12 @@ import 'core/constants.dart';
 import 'services/auth_service.dart';
 import 'screens/auth_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/workouts_screen.dart';
+import 'screens/postures_screen.dart';
+import 'screens/settings_screen.dart';
+import 'screens/main_navigation.dart';
+import 'screens/add_workout_session_screen.dart';
+import 'screens/add_exercise_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,7 +51,7 @@ class _PoseFixAppState extends State<PoseFixApp> {
     final authService = context.read<AuthService>();
 
     _router = GoRouter(
-      initialLocation: '/',
+      initialLocation: '/home',
       // Re-evaluate the 'redirect' block anytime the authService calls notifyListeners()!
       refreshListenable: authService,
       redirect: (context, state) {
@@ -56,18 +62,61 @@ class _PoseFixAppState extends State<PoseFixApp> {
         if (!loggedIn && !loggingIn) return '/login';
         
         // Force to home screen if user manually tries to go to login while already authenticated
-        if (loggedIn && loggingIn) return '/';
+        if (loggedIn && loggingIn) return '/home';
         
         return null;
       },
       routes: [
         GoRoute(
-          path: '/',
-          builder: (context, state) => const HomeScreen(),
-        ),
-        GoRoute(
           path: '/login',
           builder: (context, state) => const AuthScreen(),
+        ),
+        GoRoute(
+          path: '/add-workout',
+          builder: (context, state) => const AddWorkoutSessionScreen(),
+        ),
+        GoRoute(
+          path: '/add-exercise',
+          builder: (context, state) => const AddExerciseScreen(),
+        ),
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) {
+            return MainNavigationScreen(navigationShell: navigationShell);
+          },
+          branches: [
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/workouts',
+                  builder: (context, state) => const WorkoutsScreen(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/postures',
+                  builder: (context, state) => const PosturesScreen(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/home',
+                  builder: (context, state) => const HomeScreen(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/settings',
+                  builder: (context, state) => const SettingsScreen(),
+                ),
+              ],
+            ),
+          ],
         ),
       ],
     );
@@ -90,6 +139,19 @@ class _PoseFixAppState extends State<PoseFixApp> {
         ),
         scaffoldBackgroundColor: const Color(0xFF0F172A),
         useMaterial3: true,
+        navigationBarTheme: NavigationBarThemeData(
+          backgroundColor: const Color(0xFF1E293B),
+          indicatorColor: const Color(0xFF6366F1).withOpacity(0.25),
+          labelTextStyle: WidgetStateProperty.all(
+            const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
+          ),
+          iconTheme: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return const IconThemeData(color: Color(0xFF818CF8));
+            }
+            return const IconThemeData(color: Colors.white70);
+          }),
+        ),
       ),
     );
   }

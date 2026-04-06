@@ -66,20 +66,20 @@ The journey is divided into four phases.
 
 \textbf{Onboarding} covers initial registration via Supabase Auth, followed by the user entering personal data: name, birth date, height, weight, and sex. This data is stored in the \texttt{profiles} table and used for contextualisation of feedback in future versions.
 
-\textbf{Workout Execution} is the core operational loop. The user selects an exercise from the library, logs the session parameters (sets, reps, load), records a video of themselves performing the exercise, and uploads the video for analysis. The system returns a posture score, a list of detected mistakes with severity ratings, and a summary of measured joint angles.
+\textbf{Workout Execution} is the core operational loop. The user creates a workout session and adds one or more exercises to it, each with its own sets, reps, and load. For any exercise within the session, the user may record a video of themselves performing that exercise and upload it for analysis. The system returns a posture score, a list of detected mistakes with severity ratings, and a summary of measured joint angles specific to that exercise entry.
 
-\textbf{Data Processing} occurs server-side and is transparent to the user. The backend receives the video, stores it temporarily, invokes the ML service, persists the result, and deletes the video file. Only the structured analysis metadata is retained in the database.
+\textbf{Data Processing} occurs server-side and is transparent to the user. The backend receives the video, stores it temporarily, invokes the ML service, persists the result linked to the specific workout exercise entry, and deletes the video file. Only the structured analysis metadata is retained in the database.
 
 \textbf{Progress and Tracking} allows the user to review their workout history, track weight trends over time, and compare posture scores across sessions to observe improvement.
 
 \section{Database Design}
 \label{sec:database}
 
-The database schema consists of five tables managed by Supabase PostgreSQL. Figure \ref{fig:erd} illustrates the entity-relationship structure.
+The database schema consists of six tables managed by Supabase PostgreSQL. Figure \ref{fig:erd} illustrates the entity-relationship structure.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.80\textwidth]{./figures/erd_diagram.png}
+    \includegraphics[width=0.85\textwidth]{./figures/erd_diagram.png}
     \caption{Entity-relationship diagram of the PoseFix database schema.}
     \label{fig:erd}
 \end{figure}
@@ -90,15 +90,17 @@ The database schema consists of five tables managed by Supabase PostgreSQL. Figu
 
 \textbf{exercises} is a static reference table defining the supported exercises by name, code, category, and muscle group. The \texttt{code} column (e.g. \texttt{lat\_pulldown}) is used as a stable identifier for routing within the ML service.
 
-\textbf{workouts} records individual training sessions. Each row is owned by a user and references an exercise. It stores the performed timestamp, duration, sets, reps, load, and optional notes.
+\textbf{workouts} records a training session at the session level. Each row is owned by a user and stores the session timestamp, type, total duration, and optional notes. Crucially, it does not store per-exercise details such as sets, reps, or load — these are delegated to the \texttt{workout\_exercises} table, allowing a single session to contain multiple exercises.
 
-\textbf{posture\_analyses} holds the result of a video analysis. It is linked one-to-one with a workout via a unique constraint on \texttt{workout\_id}. The \texttt{mistakes} and \texttt{angles\_summary} columns are stored as JSONB, allowing the flexible structure returned by the ML service to be persisted without a fixed schema.
+\textbf{workout\_exercises} is a line-item table that links a workout session to a specific exercise and captures the execution parameters: \texttt{sets}, \texttt{reps}, \texttt{weight\_kg}, and \texttt{order\_index}. The \texttt{order\_index} field preserves the sequence in which exercises were performed within the session. This design normalises the schema and removes the one-exercise-per-session constraint that would otherwise limit the application's utility.
+
+\textbf{posture\_analyses} holds the result of a video analysis for a specific exercise within a workout. It is linked one-to-one with a \texttt{workout\_exercises} row via the \texttt{workout\_exercise\_id} foreign key, ensuring that each individual exercise entry can have at most one analysis. The \texttt{mistakes} and \texttt{angles\_summary} columns are stored as JSONB, allowing the flexible structure returned by the ML service to be persisted without a fixed schema. Additional metadata includes the model name and version used for the analysis, the number of frames processed, and the total mistake count.
 
 The relationships between tables follow a clear ownership hierarchy:
 
 \begin{equation}
-    \texttt{auth.users} \xrightarrow{1:1} \texttt{profiles} \xrightarrow{1:N} \texttt{workouts} \xrightarrow{1:1} \texttt{posture\_analyses}
+    \texttt{auth.users} \xrightarrow{1:1} \texttt{profiles} \xrightarrow{1:N} \texttt{workouts} \xrightarrow{1:N} \texttt{workout\_exercises} \xrightarrow{1:1} \texttt{posture\_analyses}
     \label{eq:dbrel}
 \end{equation}
 
-Weight history is independently owned by the user and does not participate in the workout chain.
+The \texttt{exercises} reference table participates in the schema via a foreign key from \texttt{workout\_exercises}, and independently from \texttt{posture\_analyses}, so that the analysed exercise is always traceable regardless of whether the originating workout entry is still present. Weight history is independently owned by the user and does not participate in the workout chain.
