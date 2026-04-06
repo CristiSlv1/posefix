@@ -14,8 +14,8 @@ public class PostureAnalysis {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "workout_id", nullable = false, unique = true)
-    private Long workoutId;
+    @Column(name = "workout_exercise_id", nullable = false, unique = true)
+    private Long workoutExerciseId;
 
     @Column(name = "user_id", nullable = false)
     private UUID userId;
@@ -59,12 +59,12 @@ public class PostureAnalysis {
         this.id = id;
     }
 
-    public Long getWorkoutId() {
-        return workoutId;
+    public Long getWorkoutExerciseId() {
+        return workoutExerciseId;
     }
 
-    public void setWorkoutId(Long workoutId) {
-        this.workoutId = workoutId;
+    public void setWorkoutExerciseId(Long workoutExerciseId) {
+        this.workoutExerciseId = workoutExerciseId;
     }
 
     public UUID getUserId() {

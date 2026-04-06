@@ -1,76 +1,106 @@
-\chapter{Titlul capitolului}
-\label{chap:ch1}
+\chapter{Theoretical Background}
+\label{chap:theory}
 
-\indent\par Informatii si citare carte \cite{Sommerville2010}.
+This chapter presents the theoretical foundations underlying the PoseFix system. It begins with an overview of pose estimation as a computer vision discipline, followed by a detailed description of the MediaPipe BlazePose model used in this work. The chapter concludes with a review of related work in the field of automated exercise analysis.
 
-Informații și citare articol publicat la conferință (in proceedings) \cite{Narayan2012}.
+\section{Pose Estimation in Computer Vision}
+\label{sec:pose-estimation}
 
-Informații și citare articol publicat în revista \cite{Robbes2015}.
+Pose estimation is the computer vision task of detecting and localising the key anatomical landmarks of the human body — typically joints such as shoulders, elbows, wrists, hips, knees, and ankles — from image or video input. The output is commonly represented as a set of coordinates, called a skeleton or pose graph, describing the spatial position of each landmark.
 
-Informații și citare articol publicat tip masterthesis  \cite{mastersthesis1993}.
+\subsection{2D vs. 3D Pose Estimation}
+\label{subsec:2d-3d}
 
-Informații și citare articol publicat tip phdthesis \cite{phdthesis1993}.
+Early approaches to pose estimation operated exclusively in two dimensions, producing $(x, y)$ coordinates for each landmark within the image plane. Two-dimensional methods are computationally inexpensive and sufficient for many tasks, but they suffer from a fundamental limitation: depth ambiguity. Because the image is a projection of three-dimensional space onto a flat sensor, two different three-dimensional configurations can produce identical two-dimensional observations. This is particularly problematic in exercise analysis, where subtle out-of-plane deviations — such as a slight lean of the torso — may be invisible in the image plane.
 
-Informații și citare articol ca resursă Internet  \cite{kinaSUR}.
+Modern models, including MediaPipe BlazePose, estimate a third coordinate $z$, approximating the depth of each landmark relative to the centre of the body. While this estimate is less accurate than dedicated depth-camera measurements, it provides sufficient information to detect gross postural errors such as excessive back lean and arm asymmetry. In this work, three-dimensional angle computation is used for all critical joint evaluations, as described in Chapter 4.
 
+\subsection{Detection Approaches}
+\label{subsec:detection-approaches}
 
+Pose estimation methods broadly fall into two categories: top-down and bottom-up. Top-down approaches first detect a bounding box around each person in the image and then apply a separate pose estimation model within each box. This produces high accuracy when individuals are well separated but is sensitive to missed detections. Bottom-up approaches detect all landmarks in the image simultaneously and then associate them into individual skeletons. Bottom-up methods scale better to crowded scenes but may produce lower per-person accuracy.
 
+MediaPipe BlazePose uses a top-down pipeline optimised for single-person video, which is the relevant scenario for self-recorded gym exercise videos. A lightweight detector locates the person in the first frame, and a tracking model maintains the skeleton estimate across subsequent frames without re-running full detection on every frame. This design enables real-time performance on mobile hardware.
 
-Inserarea și Referirea unei figuri \ref{FigCBSD}.
+\section{MediaPipe BlazePose}
+\label{sec:blazepose}
+
+MediaPipe BlazePose is an open-source pose estimation model developed by Google and released as part of the MediaPipe framework. It produces 33 three-dimensional landmarks covering the full body, including the face, torso, arms, and legs. Each landmark is annotated with a visibility score indicating the model's confidence that the point is visible and unoccluded in the frame.
 
 \begin{figure}[htbp]
-	\centering
-		\includegraphics[scale=0.65]{./figures/fig_3_1.eps}
-	\caption{Ciclul de dezvoltare al sistemelor bazate pe componente adaptat modelului cascadã}
-	\label{FigCBSD}
+    \centering
+    \includegraphics[width=0.55\textwidth]{./figures/blazepose_landmarks.png}
+    \caption{The 33 body landmarks produced by MediaPipe BlazePose, covering the full body skeleton.}
+    \label{fig:blazepose}
 \end{figure}
 
+\subsection{Architecture}
+\label{subsec:blazepose-arch}
 
-Inserarea și Referirea la Tabelul \ref{TabelSolutii}. 
+BlazePose consists of two neural network stages. The first stage is a lightweight person detector based on a single-shot detection architecture, responsible for localising the subject and providing a region of interest. The second stage is a regression network that maps the cropped image region to the 33 landmark coordinates and their visibility scores. The regression approach — predicting coordinates directly rather than generating heatmaps — enables sub-pixel accuracy and low latency.
+
+In video mode, which is the mode used in this project, the framework skips the person detector on all frames after the first by using the previous frame's landmark positions to estimate the region of interest for the current frame. This tracking-based approach significantly reduces computational load and enables smooth landmark trajectories, which is important for reliable angle calculations over time.
+
+\subsection{Coordinate System and Landmark Indices}
+\label{subsec:coordinates}
+
+Each landmark is represented as a normalised coordinate $(x, y, z)$ where $x$ and $y$ are normalised to the image width and height respectively, and $z$ represents depth relative to the midpoint of the hips. The sign convention for $z$ places landmarks closer to the camera at more negative values. The 33 landmarks are indexed from 0 to 32, with the following indices relevant to the exercises analysed in this project:
 
 \begin{table}[htbp]
 \begin{center}
-\begin{tabular}
-{|p{120pt}|p{120pt}|p{120pt}|}
+\begin{tabular}{|p{60pt}|p{60pt}|p{200pt}|}
 \hline
- Nume algoritm  &  Toate soluțiile &  Soluția optimã\\
-\hline 
-\hline Nume 1 & $20$ & $5$  \\
-\hline Nume 2 & $20$ & $2$  \\
+\textbf{Index} & \textbf{Side} & \textbf{Landmark} \\
+\hline
+11 & Left  & Shoulder \\
+\hline
+12 & Right & Shoulder \\
+\hline
+13 & Left  & Elbow \\
+\hline
+14 & Right & Elbow \\
+\hline
+15 & Left  & Wrist \\
+\hline
+16 & Right & Wrist \\
+\hline
+23 & Left  & Hip \\
+\hline
+24 & Right & Hip \\
+\hline
+25 & Left  & Knee \\
+\hline
+26 & Right & Knee \\
 \hline
 \end{tabular}
 \end{center}
-\caption{Soluții obținute }
-\label{TabelSolutii}
+\caption{BlazePose landmark indices used in the posture evaluation logic of PoseFix.}
+\label{tab:landmarks}
 \end{table}
 
+\section{Joint Angle Computation}
+\label{sec:angles}
 
-Adaugarea și Referirea la o Ecuație \ref{LabelMyEquation}.
+A joint angle is defined as the angle at vertex point $B$ formed by the vectors $\overrightarrow{BA}$ and $\overrightarrow{BC}$, where $A$, $B$, and $C$ are three landmark coordinates. In three-dimensional space, this is computed using the dot product formula:
 
+\begin{equation}
+    \theta = \arccos \left( \frac{\overrightarrow{BA} \cdot \overrightarrow{BC}}{\left\|\overrightarrow{BA}\right\| \cdot \left\|\overrightarrow{BC}\right\|} \right)
+    \label{eq:angle3d}
+\end{equation}
 
- \begin{equation}
-     ws_N4 = w_{14}*N1 + W_{24}+N2 + w_{34}*N3
-\label{LabelMyEquation}
- \end{equation}
- 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
+The result $\theta$ is expressed in degrees and represents the opening angle at the joint. For example, the back angle is computed with the left shoulder as point $A$, the left hip as vertex $B$, and the left knee as point $C$. A value near 180° indicates an upright posture, while a value significantly below 90° indicates excessive forward or backward lean.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
+Numerical stability is ensured by clipping the cosine value to the range $[-1, 1]$ before applying $\arccos$, preventing domain errors due to floating-point rounding.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
+\section{Related Work}
+\label{sec:related}
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
+The use of computer vision for exercise analysis has attracted growing research interest in parallel with the improvement of real-time pose estimation models.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
+Sim et al. \cite{Sim2024} proposed a virtual gym assistant using MediaPipe for pose estimation, demonstrating the feasibility of rule-based posture evaluation using landmark coordinates. Their system detected incorrect squat and bicep curl form using angle thresholds applied to 2D landmarks. The present work extends this approach to 3D coordinates and introduces a proportional scoring model rather than binary pass/fail judgements.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
+Tetreault \cite{Tetreault2016} studied behavioural interventions for reducing unsafe weight-lifting techniques in a gym environment. While that work focused on behavioural coaching rather than computer vision, it established a quantitative taxonomy of common form errors in resistance training that informs the rule design in this project.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
+Shim et al. \cite{Shim2025} provide a contemporary review of injury mechanisms in resistance training, identifying the shoulder, lumbar spine, and knee as the most commonly injured regions and attributing a significant proportion of injuries to technique errors. This motivates the specific checks implemented in the posture evaluation module, particularly the back angle and range-of-motion rules.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
+Compared to existing systems, PoseFix differs in three key respects: it operates on user-recorded video rather than live streaming, it uses a three-tier microservice architecture that cleanly separates UI, business logic, and ML concerns, and it returns a structured machine-readable result (score, mistake list, angle summary) rather than only a visual overlay.

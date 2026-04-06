@@ -1,6 +1,33 @@
-\chapter{Introducere}
-
-%\chapter*{Introducere}
+\chapter{Introduction}
 \label{intro}
 
-\par Introducere: obiectivele lucrării și descrierea succintă a capitolelor, prezentarea temei, prezentarea contribuției proprii, respectiv a rezultatelor originale și menționarea (dacă este cazul) a sesiunii de comunicări unde a fost prezentată sau a revistei unde a fost publicată.
+\section{Problem Context}
+\label{sec:problem}
+
+The incorrect execution of a gym exercise is one of the main causes of injuries in amateur athletes. Most individuals train without professional supervision, leading to improper posture, insufficient range of motion, or joint misalignment. While personal trainers provide real-time correction, their services are not always accessible or affordable. Therefore, there is a growing need for intelligent systems capable of automatically analysing exercise postures and providing corrective feedback \cite{Shim2025} \cite{Sim2024}.
+
+Common errors observed in resistance training include excessive forward lean of the torso, asymmetrical movement of the limbs, and insufficient range of motion through the targeted joints. These deviations are frequently invisible to the athlete without external observation and tend to accumulate into chronic injury over time. Studies indicate that the shoulder, lower back, and knee are the most frequently affected anatomical regions in gym-related injuries, with improper technique being a primary contributing factor \cite{Shim2025}. 
+
+The demand for scalable, cost-effective alternatives to personal training has grown alongside the popularisation of mobile technology and computer vision. Pose estimation models now operate in real time on consumer hardware, opening the possibility of providing instant biomechanical feedback through a smartphone application.
+
+\section{Proposed Solution}
+\label{sec:solution}
+
+This thesis proposes the design and implementation of an AI-based mobile application capable of analysing gym exercises using pose estimation techniques. The system allows users to upload a recording of themselves performing an exercise, after which computer vision algorithms extract the body key points and compute joint angles. Based on predefined rules and posture evaluation logic, the application detects common mistakes and provides structured feedback for improvement.
+
+The proposed system, named \textbf{PoseFix}, aims to simulate the core corrective function of a personal trainer in an accessible and affordable digital format. By processing a video recording rather than requiring live streaming, the system accommodates real-world network constraints and allows users to record exercises at their own pace and in any gym environment.
+
+\section{Technical Approach}
+\label{sec:approach}
+
+The application is developed using a Flutter-based mobile interface, a Java backend for business logic and data management, and a separate Python-based machine learning service responsible for posture analysis. Pose estimation models such as MediaPipe BlazePose \cite{Tetreault2016} or similar lightweight neural networks are integrated into the ML service to detect body landmarks from video frames. The system stores only relevant metadata in a Supabase database, while video data is processed temporarily and discarded after the analysis. The implementation includes requirement specification, system architecture design, algorithmic posture evaluation, testing, and performance validation.
+
+\section{Structure of the Thesis}
+\label{sec:structure}
+
+The remainder of this thesis is organised as follows. Chapter 2 provides the theoretical background on pose estimation, the MediaPipe BlazePose model, and related work in automated exercise coaching. Chapter 3 describes the overall system architecture, the user journey, and the database design. Chapter 4 presents the implementation of each system component in detail. Chapter 5 covers testing methodology and performance results. Chapter 6 draws conclusions and identifies future development directions.
+
+\section{Declaration of Generative AI and AI-Assisted Technologies in the Writing Process}
+\label{sec:ai-declaration}
+
+During the preparation of this work the author used Claude (Anthropic) in order to assist with phrasing, structural suggestions, and code review during the development phase. After using this tool, the author reviewed and edited the content as needed and takes full responsibility for the content of the thesis.

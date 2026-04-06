@@ -6,7 +6,8 @@ import lombok.Setter;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
-import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -21,9 +22,6 @@ public class Workout {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    @Column(name = "exercise_id")
-    private Long exerciseId;
-
     @Column(nullable = false)
     private String type = "gym";
 
@@ -33,14 +31,16 @@ public class Workout {
     @Column(name = "duration_seconds")
     private Integer durationSeconds;
 
-    private Integer sets;
-    private Integer reps;
-
-    @Column(name = "weight_kg", precision = 6, scale = 2)
-    private BigDecimal weightKg;
-
     private String notes;
 
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
+
+    @OneToMany(mappedBy = "workout", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<WorkoutExercise> exercises = new ArrayList<>();
+    
+    public void addExercise(WorkoutExercise exercise) {
+        exercises.add(exercise);
+        exercise.setWorkout(this);
+    }
 }

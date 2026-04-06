@@ -2,8 +2,8 @@ package com.cristislv1.backend.analysis;
 
 import com.cristislv1.backend.auth.SupabaseAuthService;
 import com.cristislv1.backend.storage.VideoStorageService;
-import com.cristislv1.backend.workout.Workout;
-import com.cristislv1.backend.workout.WorkoutRepository;
+import com.cristislv1.backend.workout.WorkoutExercise;
+import com.cristislv1.backend.workout.WorkoutExerciseRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -14,18 +14,18 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/workouts")
+@RequestMapping("/workouts/exercises")
 public class PostureAnalysisController {
 
-    private final WorkoutRepository workoutRepo;
+    private final WorkoutExerciseRepository workoutExerciseRepo;
     private final PostureAnalysisRepository analysisRepo;
     private final VideoStorageService storageService;
     private final MlServiceClient mlClient;
     private final ObjectMapper objectMapper;
 
-    public PostureAnalysisController(WorkoutRepository workoutRepo, PostureAnalysisRepository analysisRepo,
+    public PostureAnalysisController(WorkoutExerciseRepository workoutExerciseRepo, PostureAnalysisRepository analysisRepo,
                                      VideoStorageService storageService, MlServiceClient mlClient, ObjectMapper objectMapper) {
-        this.workoutRepo = workoutRepo;
+        this.workoutExerciseRepo = workoutExerciseRepo;
         this.analysisRepo = analysisRepo;
         this.storageService = storageService;
         this.mlClient = mlClient;
@@ -33,27 +33,27 @@ public class PostureAnalysisController {
     }
 
     @PostMapping("/{id}/analyze")
-    public AnalysisResponse analyzeWorkout(
+    public AnalysisResponse analyzeWorkoutExercise(
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal SupabaseAuthService.SupabaseUser user) {
 
         UUID userId = UUID.fromString(user.id());
 
-        // 1. Verify the workout belongs to the user
-        Workout workout = workoutRepo.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Workout not found or access denied"));
+        // 1. Verify the workout exercise belongs to the user
+        WorkoutExercise workoutExercise = workoutExerciseRepo.findByIdAndWorkoutUserId(id, userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Workout exercise not found or access denied"));
 
-        // 2. Check if an analysis already exists
-        if (analysisRepo.findByWorkoutId(id).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Workout already analyzed");
+        // 2. Check if an analysis already exists for this exercise instance
+        if (analysisRepo.findByWorkoutExerciseId(id).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Workout exercise already analyzed");
         }
 
         // 3. Store video locally
         String filePath = storageService.storeVideo(id, userId, file);
 
         // 4. Call ML Microservice
-        MlAnalysisResponse mlResponse = mlClient.analyzeVideo(filePath, workout.getExerciseId());
+        MlAnalysisResponse mlResponse = mlClient.analyzeVideo(filePath, workoutExercise.getExerciseId());
 
         // 5. Serialize JSON for the DB
         String mistakesJson;
@@ -67,9 +67,9 @@ public class PostureAnalysisController {
 
         // 6. Save the analysis to the DB
         PostureAnalysis analysis = new PostureAnalysis();
-        analysis.setWorkoutId(workout.getId());
+        analysis.setWorkoutExerciseId(workoutExercise.getId());
         analysis.setUserId(userId);
-        analysis.setExerciseId(workout.getExerciseId());
+        analysis.setExerciseId(workoutExercise.getExerciseId());
         analysis.setModelName("mediapipe_blazepose");
         analysis.setModelVersion("python-v1");
         analysis.setScore(mlResponse.getScore());

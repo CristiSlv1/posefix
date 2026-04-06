@@ -2,6 +2,8 @@ package com.cristislv1.backend.workout;
 
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -13,9 +15,11 @@ import java.util.UUID;
 public class WorkoutController {
 
     private final WorkoutRepository repo;
+    private final WorkoutExerciseRepository exerciseRepo;
 
-    public WorkoutController(WorkoutRepository repo) {
+    public WorkoutController(WorkoutRepository repo, WorkoutExerciseRepository exerciseRepo) {
         this.repo = repo;
+        this.exerciseRepo = exerciseRepo;
     }
 
     @PostMapping
@@ -26,19 +30,53 @@ public class WorkoutController {
 
         Workout w = new Workout();
         w.setUserId(userId);
-        w.setExerciseId(req.exerciseId());
-        w.setType(req.type() == null ? "gym" : req.type());
-        w.setDurationSeconds(req.durationSeconds());
-        w.setSets(req.sets());
-        w.setReps(req.reps());
-        w.setWeightKg(req.weightKg());
-        w.setNotes(req.notes());
+        w.setType(req.getType() == null ? "gym" : req.getType());
+        w.setDurationSeconds(req.getDurationSeconds());
+        w.setNotes(req.getNotes());
         w.setPerformedAt(OffsetDateTime.now());
         w.setCreatedAt(OffsetDateTime.now());
+
+        if (req.getExercises() != null) {
+            int index = 0;
+            for (CreateWorkoutExerciseRequest exReq : req.getExercises()) {
+                WorkoutExercise ex = new WorkoutExercise();
+                ex.setExerciseId(exReq.getExerciseId());
+                ex.setSets(exReq.getSets());
+                ex.setReps(exReq.getReps());
+                ex.setWeightKg(exReq.getWeightKg());
+                ex.setOrderIndex(index++);
+                ex.setCreatedAt(OffsetDateTime.now());
+                w.addExercise(ex);
+            }
+        }
 
         Workout saved = repo.save(w);
 
         return Map.of("id", saved.getId());
+    }
+
+    @PostMapping("/{id}/exercises")
+    public Map<String, Object> addExercise(
+            @PathVariable Long id,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.cristislv1.backend.auth.SupabaseAuthService.SupabaseUser principal,
+            @Valid @RequestBody CreateWorkoutExerciseRequest exReq) {
+        UUID userId = UUID.fromString(principal.id());
+
+        Workout w = repo.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Workout session not found or access denied"));
+
+        WorkoutExercise ex = new WorkoutExercise();
+        ex.setExerciseId(exReq.getExerciseId());
+        ex.setSets(exReq.getSets());
+        ex.setReps(exReq.getReps());
+        ex.setWeightKg(exReq.getWeightKg());
+        ex.setOrderIndex(w.getExercises().size());
+        ex.setCreatedAt(OffsetDateTime.now());
+        
+        ex.setWorkout(w);
+        WorkoutExercise savedEx = exerciseRepo.save(ex);
+
+        return Map.of("id", savedEx.getId());
     }
 
     @GetMapping
@@ -54,7 +92,6 @@ public class WorkoutController {
             @org.springframework.security.core.annotation.AuthenticationPrincipal com.cristislv1.backend.auth.SupabaseAuthService.SupabaseUser principal) {
         UUID userId = UUID.fromString(principal.id());
         return repo.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
-                        org.springframework.http.HttpStatus.NOT_FOUND, "Workout not found or access denied"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Workout not found or access denied"));
     }
 }

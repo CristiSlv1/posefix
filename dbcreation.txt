@@ -67,18 +67,14 @@ for each row execute function public.set_updated_at();
 
 
 -- =========================
--- 4) WORKOUTS
+-- 4) WORKOUTS (Sessions)
 -- =========================
 create table if not exists public.workouts (
   id bigserial primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
-  exercise_id bigint references public.exercises(id) on delete set null,
   type text not null default 'gym' check (type in ('gym','run','swim')),
   performed_at timestamptz not null default now(),
   duration_seconds int,
-  sets int,
-  reps int,
-  weight_kg numeric(6,2),
   notes text,
   created_at timestamptz not null default now()
 );
@@ -86,13 +82,30 @@ create table if not exists public.workouts (
 create index if not exists ix_workouts_user_date
 on public.workouts(user_id, performed_at desc);
 
+-- =========================
+-- 4.5) WORKOUT EXERCISES
+-- =========================
+create table if not exists public.workout_exercises (
+  id bigserial primary key,
+  workout_id bigint not null references public.workouts(id) on delete cascade,
+  exercise_id bigint references public.exercises(id) on delete set null,
+  sets int,
+  reps int,
+  weight_kg numeric(6,2),
+  order_index int not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists ix_workout_exercises_workout
+on public.workout_exercises(workout_id);
+
 
 -- =========================
--- 5) POSTURE ANALYSES (1 per workout)
+-- 5) POSTURE ANALYSES (1 per workout exercise)
 -- =========================
 create table if not exists public.posture_analyses (
   id bigserial primary key,
-  workout_id bigint not null references public.workouts(id) on delete cascade,
+  workout_exercise_id bigint not null references public.workout_exercises(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   exercise_id bigint references public.exercises(id) on delete set null,
 
@@ -108,7 +121,7 @@ create table if not exists public.posture_analyses (
 
   created_at timestamptz not null default now(),
 
-  constraint uq_posture_one_per_workout unique (workout_id)
+  constraint uq_posture_one_per_workout_exercise unique (workout_exercise_id)
 );
 
 create index if not exists ix_posture_user_created

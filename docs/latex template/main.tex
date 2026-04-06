@@ -5,9 +5,6 @@
 % type may be bachelor or master (default is bachelor)
 \usepackage[language=romanian, type=bachelor]{style}
 
-%\geometry{a4paper,top=2.5cm,left=3cm,right=2.5cm,bottom=2.5cm}
-%in style
-%controlling the appearance of your headers and footers
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \lhead{}
@@ -17,13 +14,12 @@
 
 \begin{document}
 
-\specialization{[Secție]}	
-\title{[Titlu lucrare]}					   
-\author{[Nume student]}											
-\supervisor{[Grad, titlu și nume coordonator]}				
+\specialization{Informatică}	
+\title{Design and Implementation of an AI-Based Mobile Application for Automatic Gym Exercise Posture Analysis and Feedback}					   
+\author{Strugari Cristian-Silviu}											
+\supervisor{Dr. Molnar Arthur}				
 				
 \maketitle
-
 
 \newpage
 \thispagestyle{empty}
@@ -36,29 +32,21 @@ ABSTRACT
 \vspace{0.5cm}	
 \hrule
 \vspace{0.5cm}	
-%\cleardoublepage
 
-Abstract: un rezumat în limba engleză cu prezentarea, pe scurt, a conținutului pe capitole, punând accent pe contribuțiile proprii și originalitate
-
-
+This thesis presents the design and implementation of PoseFix, an AI-based mobile application for automatic gym exercise posture analysis and feedback. Chapter 1 introduces the problem of incorrect exercise execution among amateur athletes, motivates the need for an automated solution, and outlines the structure of the work. Chapter 2 provides the theoretical background, covering pose estimation techniques, the MediaPipe BlazePose model, and a review of related work. Chapter 3 describes the system architecture, including the three-tier design comprising a Flutter mobile application, a Java Spring Boot backend, and a Python machine learning service, as well as the user journey and database design. Chapter 4 presents the implementation details of each system component. Chapter 5 covers testing and performance evaluation. Chapter 6 draws conclusions and outlines directions for future work. The primary contribution of this thesis is a working end-to-end system capable of analysing a recorded gym exercise video and returning a structured posture score, detected mistakes, and joint angle measurements.
 
 \tableofcontents
-
 
 \newpage
 \pagenumbering{arabic}
 
 \input{chapters/chapter1_introduction}
-%\addcontentsline{toc}{chapter}{Introducere}
-%\addcontentsline{toc}{chapter}{Introduction}
 
 \input{chapters/chapter2}
 \input{chapters/chapter3}
 \input{chapters/chapter4}
 
 \input{chapters/chapter6_conclusions}
-%\addcontentsline{toc}{chapter}{Concluzii}
-%\addcontentsline{toc}{chapter}{Conclusions}
 
 \bibliography{references}
 
