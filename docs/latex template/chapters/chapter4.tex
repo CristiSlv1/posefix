@@ -1,19 +1,361 @@
-\chapter{Titlul capitolului}
-\label{chap:ch3}
+\chapter{Application Requirements and Specification}
+\label{chap:requirements}
 
+This chapter formalises the requirements of the PoseFix application and specifies the system at the level of its external interfaces. It begins with the functional requirements organised by feature area, continues with non-functional requirements, presents the principal use cases, and concludes with the REST API specification, key interaction sequences, and the operational constraints under which the system is designed to run. The contents of this chapter reflect the application as it is implemented, not an idealised future version of it.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
+\section{Functional Requirements}
+\label{sec:functional}
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
+The functional scope of PoseFix is divided into five feature areas: authentication and identity, profile management, weight tracking, workout and exercise logging, and posture analysis.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
+\subsection{Authentication and Identity}
+\label{subsec:fr-auth}
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
+\textbf{FR-1.} The system shall allow a user to create an account using an email address and a password. Registration is performed through the Supabase authentication service.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
+\textbf{FR-2.} The system shall allow a registered user to sign in with email and password, receiving a JWT access token on success.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
+\textbf{FR-3.} The system shall allow a signed-in user to sign out, invalidating the local session.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
+\textbf{FR-4.} The backend shall validate every incoming JWT access token against the Supabase authentication service and reject requests whose tokens are missing, expired, or invalid on any authenticated endpoint.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
+\textbf{FR-5.} The backend shall expose an identity-echo endpoint that returns the authenticated user's identifier and email, used to verify that the authentication pipeline is functioning correctly.
+
+\subsection{Profile Management}
+\label{subsec:fr-profile}
+
+\textbf{FR-6.} The system shall allow an authenticated user to retrieve their own profile, containing name, birth date, weight, height, and sex.
+
+\textbf{FR-7.} The system shall allow an authenticated user to create or update their profile. When a profile does not yet exist, the update operation shall create it, using the authenticated user identifier.
+
+\textbf{FR-8.} The name field shall be required and non-blank. The sex field, when provided, shall take the value \texttt{male} or \texttt{female}. Remaining fields shall be optional.
+
+\subsection{Weight Tracking}
+\label{subsec:fr-weight}
+
+\textbf{FR-9.} The system shall allow an authenticated user to log the current day's weight. At most one weight entry per user per calendar day shall be stored; a second submission on the same day shall overwrite the first.
+
+\textbf{FR-10.} The system shall maintain a history of the user's weight entries and return, on request, the 30 most recent entries ordered from newest to oldest.
+
+\textbf{FR-11.} Each time a new daily weight is logged, the system shall also update the \texttt{weight\_kg} field in the user's profile so that the profile reflects the latest measurement.
+
+\subsection{Workout and Exercise Logging}
+\label{subsec:fr-workout}
+
+\textbf{FR-12.} The system shall expose a read-only catalogue of supported exercises, each with a stable machine-readable code, a display name, a category, a muscle group, and a textual description.
+
+\textbf{FR-13.} The system shall allow an authenticated user to create a workout session. A session records the session type (\texttt{gym}, \texttt{run}, or \texttt{swim}), the performed timestamp, an optional total duration in seconds, and optional free-text notes.
+
+\textbf{FR-14.} A workout session shall contain zero or more exercise entries. Each entry references an exercise from the catalogue and records the number of sets, the number of repetitions, an optional load in kilograms, and an ordinal position within the session.
+
+\textbf{FR-15.} The system shall allow an authenticated user to append an additional exercise entry to an existing workout session that they own.
+
+\textbf{FR-16.} The system shall allow an authenticated user to list their workout sessions, ordered from most recent to least recent, and to retrieve the full details of a single session by identifier. Sessions belonging to other users shall not be accessible.
+
+\subsection{Posture Analysis}
+\label{subsec:fr-analysis}
+
+\textbf{FR-17.} The system shall allow an authenticated user to upload a video of themselves performing a specific exercise entry within one of their workout sessions. Accepted file types are \texttt{.mp4} and \texttt{.mov}. Empty files shall be rejected.
+
+\textbf{FR-18.} Upon receiving a video, the system shall invoke the machine learning service to perform pose estimation and rule-based posture evaluation, producing a numeric score between 0 and 100, a list of detected mistakes with severity levels, and a summary of measured joint angles.
+
+\textbf{FR-19.} The system shall persist the result of each analysis and associate it with the specific workout exercise entry for which the video was uploaded. At most one analysis per workout exercise entry shall be stored; a second attempt shall be rejected with a conflict error.
+
+\textbf{FR-20.} For the lat pulldown exercise, the machine learning service shall evaluate the following aspects of form: camera angle adequacy (limb visibility), back lean (through the three-dimensional shoulder–hip–knee angle), arm symmetry during the pull (through the vertical offset between elbows), and range of motion (through the normalised descent of the wrists relative to the shoulders).
+
+\textbf{FR-21.} The system shall report back to the mobile client the score, the list of mistakes, and the angle summary in a single response.
+
+\section{Non-Functional Requirements}
+\label{sec:nonfunctional}
+
+The non-functional requirements describe the quality attributes the system shall exhibit. They are grouped by concern.
+
+\subsection{Security}
+\label{subsec:nfr-security}
+
+\textbf{NFR-1.} All endpoints that handle user-specific data shall require a valid JWT access token. Only the health endpoint and the exercise catalogue shall be publicly accessible.
+
+\textbf{NFR-2.} Each database query involving user-owned data shall be scoped to the authenticated user identifier. The backend shall never return data belonging to one user in response to a request made by a different user.
+
+\textbf{NFR-3.} The Supabase service-role key shall be held only on the backend and shall not be transmitted to or stored on any client.
+
+\textbf{NFR-4.} All passwords shall be handled exclusively by the Supabase authentication service; the application's backend and database shall not store passwords in any form.
+
+\subsection{Performance and Responsiveness}
+\label{subsec:nfr-performance}
+
+\textbf{NFR-5.} Non-analysis API requests (authentication echo, profile read/write, workout listing, exercise listing, weight log) shall complete within approximately 500 milliseconds under typical conditions.
+
+\textbf{NFR-6.} A posture analysis of a short video clip (typically 5–15 seconds of lat pulldown footage) shall complete within a time budget suitable for interactive use; the machine learning service shall process frames at or near real time on consumer hardware using the MediaPipe BlazePose video mode.
+
+\textbf{NFR-7.} The maximum accepted video file size per upload shall be 50 megabytes, enforced at the HTTP multipart layer.
+
+\subsection{Privacy}
+\label{subsec:nfr-privacy}
+
+\textbf{NFR-8.} Videos shall be used solely as transient inputs to the analysis pipeline. Only structured analysis metadata — score, mistake list, angle summary — shall be persisted in the database.
+
+\textbf{NFR-9.} Credentials, access tokens, and personally identifying fields shall not be written to application logs.
+
+\subsection{Reliability}
+\label{subsec:nfr-reliability}
+
+\textbf{NFR-10.} Failure of the machine learning service shall not cause the backend to return an unhandled server error. Such failures shall be translated into a 503 \emph{Service Unavailable} response with a user-facing message.
+
+\textbf{NFR-11.} The system shall validate inputs against declared constraints before writing to the database, and shall return structured validation error messages when constraints fail.
+
+\textbf{NFR-12.} Database integrity shall be enforced at the schema level through foreign keys, \texttt{CHECK} constraints, and unique indexes. Application code shall not be the sole guardian of these invariants.
+
+\subsection{Usability}
+\label{subsec:nfr-usability}
+
+\textbf{NFR-13.} The mobile application shall follow the Material 3 design system and shall remain responsive on entry-level consumer smartphones.
+
+\textbf{NFR-14.} Error states returned by the backend shall include a machine-readable field map (for validation errors) and a human-readable message (for all errors), enabling the mobile client to surface actionable guidance to the user.
+
+\subsection{Portability and Maintainability}
+\label{subsec:nfr-portability}
+
+\textbf{NFR-15.} The mobile client shall run on both Android and iOS from a single Flutter codebase.
+
+\textbf{NFR-16.} The three tiers shall be independently deployable and independently upgradable. No tier shall hold in-memory state that another tier depends on beyond the scope of a single request.
+
+\textbf{NFR-17.} The exercise evaluation logic shall be organised per exercise, so that adding support for a new exercise requires adding a new evaluator module and a routing entry in the machine learning service, without modifying the backend or the mobile client.
+
+\section{Use Cases}
+\label{sec:use-cases}
+
+This section presents the principal use cases supported by PoseFix. The actor in every case is the \emph{Authenticated User}, except for \textbf{UC1}, where the actor is an unauthenticated visitor.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.75\textwidth]{./figures/use_case_diagram.png}
+    \caption{Use case diagram of the PoseFix application.}
+    \label{fig:usecases}
+\end{figure}
+
+\subsection{UC1 --- Register and Sign In}
+\label{subsec:uc1}
+
+\textbf{Actor.} Unauthenticated visitor.\\
+\textbf{Preconditions.} The user has installed the mobile application.\\
+\textbf{Main flow.}
+\begin{enumerate}
+    \item The user opens the application and is redirected to the login screen.
+    \item The user enters an email address and a password and chooses either sign-in or sign-up.
+    \item The Supabase authentication service validates the credentials, creating a new account if in sign-up mode.
+    \item On success, Supabase issues a JWT access token, which is retained by the mobile client.
+    \item The router detects the authenticated state and redirects to the home screen.
+\end{enumerate}
+\textbf{Alternative flows.}
+\begin{itemize}
+    \item If email confirmation is required, the session is null on sign-up; the user is informed to confirm via email and returned to the login screen.
+    \item If the credentials are invalid, the user is shown an error message and remains on the login screen.
+\end{itemize}
+\textbf{Postcondition.} The user holds a valid access token and can invoke authenticated endpoints.
+
+\subsection{UC2 --- Manage Profile}
+\label{subsec:uc2}
+
+\textbf{Preconditions.} The user is authenticated.\\
+\textbf{Main flow.}
+\begin{enumerate}
+    \item The user requests their profile.
+    \item If no profile exists, the user enters name, birth date, height, weight, and sex, and submits.
+    \item The backend validates the data, creates or updates the profile row keyed by the user identifier, and returns the saved profile.
+\end{enumerate}
+\textbf{Alternative flows.}
+\begin{itemize}
+    \item Invalid input (blank name, invalid sex) yields a 400 response with a per-field error map.
+\end{itemize}
+\textbf{Postcondition.} The user has a persisted profile.
+
+\subsection{UC3 --- Log a Workout Session}
+\label{subsec:uc3}
+
+\textbf{Preconditions.} The user is authenticated; at least one exercise exists in the catalogue.\\
+\textbf{Main flow.}
+\begin{enumerate}
+    \item The user opens the workouts screen and chooses to add a session.
+    \item The user selects a session type, enters an optional duration and notes, and adds one or more exercise entries. For each entry, the user selects an exercise from the catalogue and enters sets, repetitions, and optionally a load in kilograms.
+    \item The user submits the session.
+    \item The backend creates the workout row and the associated exercise entries, assigning each entry a sequential ordinal position, and returns the new session identifier.
+    \item The workouts screen refreshes and displays the new session at the top of the list.
+\end{enumerate}
+\textbf{Postcondition.} A new workout session and its exercise entries are persisted.
+
+\subsection{UC4 --- Analyse Exercise Posture}
+\label{subsec:uc4}
+
+\textbf{Preconditions.} The user is authenticated; the target workout exercise entry exists and has not previously been analysed.\\
+\textbf{Main flow.}
+\begin{enumerate}
+    \item The user records or selects a short video of themselves performing the exercise.
+    \item The user uploads the video via the analysis endpoint, identifying the target workout exercise entry.
+    \item The backend authorises the request by verifying that the workout exercise entry belongs to the authenticated user.
+    \item The backend stores the video on local disk and invokes the machine learning service with the file path and the exercise identifier.
+    \item The machine learning service opens the video, performs frame-by-frame pose estimation with MediaPipe BlazePose, evaluates the exercise-specific rule set, and returns a score, a list of mistakes, and an angles summary.
+    \item The backend persists a posture analysis row linked to the workout exercise entry and returns the result to the mobile client.
+    \item The client displays the score, the list of mistakes, and the measured angles.
+\end{enumerate}
+\textbf{Alternative flows.}
+\begin{itemize}
+    \item If the workout exercise entry does not belong to the user, the backend returns 404.
+    \item If an analysis already exists for the entry, the backend returns 409.
+    \item If the file is empty or of an unsupported type, the backend returns 400.
+    \item If the machine learning service is unreachable, the backend returns 503.
+\end{itemize}
+\textbf{Postcondition.} A posture analysis row is persisted, and the client has received the structured result.
+
+\subsection{UC5 --- Review Workout History}
+\label{subsec:uc5}
+
+\textbf{Preconditions.} The user is authenticated.\\
+\textbf{Main flow.}
+\begin{enumerate}
+    \item The user opens the workouts screen.
+    \item The client fetches the user's workout sessions, each with its embedded list of exercise entries.
+    \item The user can scroll the history and, in future versions, drill into a single session to view its analyses.
+\end{enumerate}
+\textbf{Postcondition.} The user has viewed their workout history.
+
+\subsection{UC6 --- Log Daily Weight}
+\label{subsec:uc6}
+
+\textbf{Preconditions.} The user is authenticated.\\
+\textbf{Main flow.}
+\begin{enumerate}
+    \item The user submits their current weight.
+    \item The backend upserts the weight entry for the current date and updates the user's profile weight field.
+    \item The backend returns the stored weight entry.
+\end{enumerate}
+\textbf{Postcondition.} The day's weight is recorded, with the profile kept in sync.
+
+\section{System Specification}
+\label{sec:system-spec}
+
+This section specifies the external contract of the system at the HTTP level and describes the principal cross-tier interactions.
+
+\subsection{REST API Overview}
+\label{subsec:rest-overview}
+
+The backend exposes the endpoints listed in Table \ref{tab:endpoints}. All authenticated endpoints expect the header \texttt{Authorization: Bearer <supabase-access-token>}. Unless otherwise noted, requests and responses use JSON encoding.
+
+\begin{table}[htbp]
+\begin{center}
+\begin{tabular}{|p{40pt}|p{140pt}|p{35pt}|p{150pt}|}
+\hline
+\textbf{Method} & \textbf{Path} & \textbf{Auth} & \textbf{Purpose} \\
+\hline
+GET  & \texttt{/health} & No  & Liveness probe \\
+\hline
+GET  & \texttt{/exercises} & No  & Exercise catalogue \\
+\hline
+GET  & \texttt{/me} & Yes & Echo authenticated identity \\
+\hline
+GET  & \texttt{/profile} & Yes & Read profile \\
+\hline
+PUT  & \texttt{/profile} & Yes & Create or update profile \\
+\hline
+GET  & \texttt{/weights} & Yes & Last 30 weight entries \\
+\hline
+PUT  & \texttt{/weights/today} & Yes & Upsert today's weight \\
+\hline
+GET  & \texttt{/workouts} & Yes & List workout sessions \\
+\hline
+POST & \texttt{/workouts} & Yes & Create session with exercises \\
+\hline
+GET  & \texttt{/workouts/\{id\}} & Yes & Session detail \\
+\hline
+POST & \texttt{/workouts/\{id\}/exercises} & Yes & Append exercise to session \\
+\hline
+POST & \texttt{/workouts/\{id\}/upload-video} & Yes & Upload video without analysis \\
+\hline
+POST & \texttt{/workouts/exercises/\{id\}/analyze} & Yes & Analyse video for a session exercise \\
+\hline
+\end{tabular}
+\end{center}
+\caption{REST endpoints exposed by the PoseFix backend.}
+\label{tab:endpoints}
+\end{table}
+
+\subsection{Error Response Format}
+\label{subsec:errors}
+
+All error responses share a common envelope, as illustrated below. The \texttt{validationErrors} field is present only when a request body fails bean-validation constraints.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\textwidth]{./figures/error_response.png}
+    \caption{Shape of the error response envelope returned by the backend.}
+    \label{fig:errorshape}
+\end{figure}
+
+\begin{table}[htbp]
+\begin{center}
+\begin{tabular}{|p{70pt}|p{280pt}|}
+\hline
+\textbf{Status} & \textbf{When returned} \\
+\hline
+400 Bad Request & Validation failure, empty upload, unsupported file type. \\
+\hline
+401 Unauthorized & Missing, invalid, or expired JWT. \\
+\hline
+404 Not Found & Resource does not belong to the authenticated user or does not exist. \\
+\hline
+409 Conflict & Posture analysis already exists for the target workout exercise entry. \\
+\hline
+503 Service Unavailable & Machine learning service cannot be reached. \\
+\hline
+500 Internal Server Error & Any other unhandled failure; a scrubbed message is returned to the client. \\
+\hline
+\end{tabular}
+\end{center}
+\caption{Error status codes used by the backend.}
+\label{tab:errors}
+\end{table}
+
+\subsection{Posture Analysis Sequence}
+\label{subsec:sequence-analysis}
+
+Figure \ref{fig:seq-analysis} illustrates the end-to-end flow of a posture analysis request across the four components of the system. The mobile client initiates the request with a multipart upload; the backend enforces ownership, persists the video, delegates to the machine learning service, and, on return, persists the structured result before responding to the client.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{./figures/seq_analysis.png}
+    \caption{Sequence diagram of the posture analysis flow.}
+    \label{fig:seq-analysis}
+\end{figure}
+
+\subsection{Authentication Sequence}
+\label{subsec:sequence-auth}
+
+Figure \ref{fig:seq-auth} illustrates the authentication flow. The mobile client obtains an access token from Supabase and attaches it to every subsequent request. The backend, through a dedicated filter, validates the token against Supabase and populates the security context before any controller is invoked.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{./figures/seq_auth.png}
+    \caption{Sequence diagram of the authentication flow.}
+    \label{fig:seq-auth}
+\end{figure}
+
+\section{Constraints and Assumptions}
+\label{sec:constraints}
+
+The system is designed under a number of explicit constraints and assumptions, which shape both its architecture and its evaluation.
+
+\textbf{Co-located filesystem.} The backend passes the absolute path of the uploaded video to the machine learning service, which reads the file directly from disk. Consequently, the two processes are assumed to share a filesystem, whether by running on the same host or by mounting a shared volume. This design reduces network overhead and simplifies the machine learning service but precludes fully independent horizontal scaling of the two tiers.
+
+\textbf{Single-exercise scope for the machine learning service.} In its current state, the machine learning service implements posture evaluation rules only for the lat pulldown exercise (exercise identifier 1). The architecture accommodates additional exercises through a registry pattern inside the service, but the thesis scope is limited to a single exercise to allow for thorough validation.
+
+\textbf{Supabase as the authentication provider.} User identity is outsourced entirely to Supabase. The backend does not store user credentials and does not issue its own tokens; it merely validates tokens produced by Supabase. This decision trades implementation burden for a dependency on a third-party service.
+
+\textbf{Video as a transient input.} The system is designed on the premise that videos are not retained as first-class user content. While the current implementation leaves the uploaded video on disk for post-mortem debugging, the intended production behaviour is to delete the video immediately after analysis, consistent with the privacy requirement \textbf{NFR-8}.
+
+\textbf{One analysis per workout exercise entry.} The schema enforces a unique analysis per workout exercise row. This simplifies the data model and avoids ambiguity about which analysis represents the user's performance for a given logged set of reps.
+
+\textbf{Mobile-first client scope.} The client is assumed to be a mobile device in portrait orientation. A web client is technically possible from the same Flutter codebase but is not a target of the current thesis.
+
+\textbf{Single-user session model.} Each request is assumed to originate from a single authenticated user. The architecture does not support shared or collaborative workouts.
+
+\textbf{Network availability for analysis.} The analysis flow requires network connectivity between the mobile client, the backend, and the machine learning service. Offline analysis on the device is not supported in the current scope.
