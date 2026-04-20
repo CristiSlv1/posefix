@@ -48,4 +48,34 @@ public class ProfileController {
 
         return profileRepository.save(profile);
     }
+
+    @PutMapping("/weight")
+    public Profile updateWeight(
+            @AuthenticationPrincipal SupabaseAuthService.SupabaseUser user,
+            @RequestBody java.util.Map<String, Object> body) {
+
+        Object raw = body.get("weightKg");
+        if (raw == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "weightKg is required");
+        }
+        java.math.BigDecimal weightKg;
+        try {
+            weightKg = new java.math.BigDecimal(raw.toString());
+        } catch (NumberFormatException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "weightKg must be a number");
+        }
+        if (weightKg.signum() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "weightKg must be positive");
+        }
+
+        UUID userId = UUID.fromString(user.id());
+        Profile profile = profileRepository.findById(userId).orElseGet(() -> {
+            Profile p = new Profile();
+            p.setUserId(userId);
+            p.setName("User");
+            return p;
+        });
+        profile.setWeightKg(weightKg);
+        return profileRepository.save(profile);
+    }
 }

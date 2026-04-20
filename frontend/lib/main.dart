@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'package:go_router/go_router.dart';
 
 import 'core/constants.dart';
+import 'core/theme.dart';
 import 'services/auth_service.dart';
+import 'services/theme_service.dart';
 import 'screens/auth_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/workouts_screen.dart';
@@ -15,6 +16,13 @@ import 'screens/settings_screen.dart';
 import 'screens/main_navigation.dart';
 import 'screens/add_workout_session_screen.dart';
 import 'screens/add_exercise_screen.dart';
+import 'screens/workout_detail_screen.dart';
+import 'screens/analyze_select_exercise_screen.dart';
+import 'screens/analyze_video_screen.dart';
+import 'screens/posture_detail_screen.dart';
+import 'screens/edit_profile_screen.dart';
+import 'screens/personal_data_screen.dart';
+import 'models/exercise.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,10 +32,14 @@ void main() async {
     anonKey: AppConstants.supabaseAnonKey,
   );
 
+  final themeService = ThemeService();
+  await themeService.load();
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider<ThemeService>.value(value: themeService),
       ],
       child: const PoseFixApp(),
     ),
@@ -79,6 +91,24 @@ class _PoseFixAppState extends State<PoseFixApp> {
           path: '/add-exercise',
           builder: (context, state) => const AddExerciseScreen(),
         ),
+        GoRoute(
+          path: '/analyze-select',
+          builder: (context, state) => const AnalyzeSelectExerciseScreen(),
+        ),
+        GoRoute(
+          path: '/analyze-video',
+          builder: (context, state) => AnalyzeVideoScreen(
+            exercise: state.extra as Exercise,
+          ),
+        ),
+        GoRoute(
+          path: '/settings/profile',
+          builder: (context, state) => const EditProfileScreen(),
+        ),
+        GoRoute(
+          path: '/settings/personal-data',
+          builder: (context, state) => const PersonalDataScreen(),
+        ),
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) {
             return MainNavigationScreen(navigationShell: navigationShell);
@@ -89,6 +119,14 @@ class _PoseFixAppState extends State<PoseFixApp> {
                 GoRoute(
                   path: '/workouts',
                   builder: (context, state) => const WorkoutsScreen(),
+                  routes: [
+                    GoRoute(
+                      path: ':id',
+                      builder: (context, state) => WorkoutDetailScreen(
+                        workoutId: int.parse(state.pathParameters['id']!),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -97,6 +135,14 @@ class _PoseFixAppState extends State<PoseFixApp> {
                 GoRoute(
                   path: '/postures',
                   builder: (context, state) => const PosturesScreen(),
+                  routes: [
+                    GoRoute(
+                      path: ':id',
+                      builder: (context, state) => PostureDetailScreen(
+                        analysisId: int.parse(state.pathParameters['id']!),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -124,35 +170,14 @@ class _PoseFixAppState extends State<PoseFixApp> {
 
   @override
   Widget build(BuildContext context) {
+    final themeService = context.watch<ThemeService>();
     return MaterialApp.router(
       title: 'PoseFix AI',
       debugShowCheckedModeBanner: false,
       routerConfig: _router,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6366F1),
-          brightness: Brightness.dark,
-        ),
-        textTheme: GoogleFonts.interTextTheme(
-          Theme.of(context).textTheme.apply(bodyColor: Colors.white),
-        ),
-        scaffoldBackgroundColor: const Color(0xFF0F172A),
-        useMaterial3: true,
-        navigationBarTheme: NavigationBarThemeData(
-          backgroundColor: const Color(0xFF1E293B),
-          indicatorColor: const Color(0xFF6366F1).withOpacity(0.25),
-          labelTextStyle: WidgetStateProperty.all(
-            const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
-          ),
-          iconTheme: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) {
-              return const IconThemeData(color: Color(0xFF818CF8));
-            }
-            return const IconThemeData(color: Colors.white70);
-          }),
-        ),
-      ),
+      theme: lightAppTheme,
+      darkTheme: darkAppTheme,
+      themeMode: themeService.mode,
     );
   }
 }

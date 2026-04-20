@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../core/theme.dart';
 import '../models/exercise.dart';
 import '../models/workout_exercise.dart';
 import '../services/api_service.dart';
@@ -55,17 +56,14 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.appColors;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add an Exercise'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Add an Exercise')),
       body: FutureBuilder<List<Exercise>>(
         future: _exercisesFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFF6366F1)));
+            return Center(child: CircularProgressIndicator(color: c.primary));
           } else if (snapshot.hasError) {
              return Center(child: Text("Failed to load global exercises\n${snapshot.error}", textAlign: TextAlign.center));
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -81,7 +79,7 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Card(
-              color: const Color(0xFF1E293B),
+              color: c.card,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -129,7 +127,7 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
                     ElevatedButton(
                       onPressed: _saveExerciseToSession,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6366F1),
+                        backgroundColor: c.primary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),

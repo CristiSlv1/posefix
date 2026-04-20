@@ -30,6 +30,9 @@ public class Exercise {
 
     private String description;
 
+    @Column(name = "injury_notes")
+    private String injuryNotes;
+
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
 

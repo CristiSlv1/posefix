@@ -5,6 +5,7 @@ class Exercise {
   final String category;
   final String? muscleGroup;
   final String? description;
+  final String? injuryNotes;
 
   Exercise({
     required this.id,
@@ -13,6 +14,7 @@ class Exercise {
     required this.category,
     this.muscleGroup,
     this.description,
+    this.injuryNotes,
   });
 
   factory Exercise.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class Exercise {
       category: json['category'],
       muscleGroup: json['muscleGroup'],
       description: json['description'],
+      injuryNotes: json['injuryNotes'],
     );
   }
 }

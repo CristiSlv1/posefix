@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../core/theme.dart';
 import '../models/workout_exercise.dart';
 import '../services/api_service.dart';
 
@@ -62,20 +63,16 @@ class _AddWorkoutSessionScreenState extends State<AddWorkoutSessionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.appColors;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add Workout Session'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Add Workout Session')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Session Details Card
             Card(
-              color: const Color(0xFF1E293B),
+              color: c.card,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -116,18 +113,17 @@ class _AddWorkoutSessionScreenState extends State<AddWorkoutSessionScreen> {
                 const Text('Exercises', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 TextButton.icon(
                   onPressed: _navigateToAddExercise,
-                  icon: const Icon(Icons.add, color: Color(0xFF818CF8)),
-                  label: const Text('Add Exercise', style: TextStyle(color: Color(0xFF818CF8))),
+                  icon: Icon(Icons.add, color: c.primaryLight),
+                  label: Text('Add Exercise', style: TextStyle(color: c.primaryLight)),
                 )
               ],
             ),
             const SizedBox(height: 8),
 
-            // Exercises List
             if (_exercises.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
-                child: Center(child: Text("No exercises appended yet.", style: TextStyle(color: Colors.white54))),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: Center(child: Text('No exercises appended yet.', style: TextStyle(color: c.textMuted))),
               )
             else
               ListView.builder(
@@ -137,13 +133,13 @@ class _AddWorkoutSessionScreenState extends State<AddWorkoutSessionScreen> {
                 itemBuilder: (context, i) {
                   final ex = _exercises[i];
                   return Card(
-                    color: const Color(0xFF334155),
+                    color: c.cardAlt,
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
-                      title: Text(ex.exerciseName ?? "Exercise #${ex.exerciseId}", style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text("${ex.sets} sets x ${ex.reps} reps${ex.weightKg != null ? ' @ ${ex.weightKg}kg' : ''}"),
+                      title: Text(ex.exerciseName ?? 'Exercise #${ex.exerciseId}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Text('${ex.sets} sets x ${ex.reps} reps${ex.weightKg != null ? ' @ ${ex.weightKg}kg' : ''}'),
                       trailing: IconButton(
-                        icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                        icon: Icon(Icons.delete_outline, color: c.danger),
                         onPressed: () => setState(() => _exercises.removeAt(i)),
                       ),
                     ),
@@ -159,7 +155,7 @@ class _AddWorkoutSessionScreenState extends State<AddWorkoutSessionScreen> {
           child: ElevatedButton(
             onPressed: _isSaving ? null : _saveSession,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF10B981),
+              backgroundColor: c.success,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

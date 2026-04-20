@@ -14,7 +14,7 @@ public class PostureAnalysis {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "workout_exercise_id", nullable = false, unique = true)
+    @Column(name = "workout_exercise_id")
     private Long workoutExerciseId;
 
     @Column(name = "user_id", nullable = false)

@@ -40,4 +40,12 @@ class AuthService extends ChangeNotifier {
   Future<void> signOut() async {
     await _supabase.auth.signOut();
   }
+
+  Future<void> sendPasswordResetEmail(String email) async {
+    await _supabase.auth.resetPasswordForEmail(email.trim());
+  }
+
+  Future<void> updatePassword(String newPassword) async {
+    await _supabase.auth.updateUser(UserAttributes(password: newPassword));
+  }
 }

@@ -72,11 +72,50 @@ public class WorkoutController {
         ex.setWeightKg(exReq.getWeightKg());
         ex.setOrderIndex(w.getExercises().size());
         ex.setCreatedAt(OffsetDateTime.now());
-        
+
         ex.setWorkout(w);
         WorkoutExercise savedEx = exerciseRepo.save(ex);
 
         return Map.of("id", savedEx.getId());
+    }
+
+    @PutMapping("/{id}/exercises/{exId}")
+    public WorkoutExercise updateExercise(
+            @PathVariable Long id,
+            @PathVariable Long exId,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.cristislv1.backend.auth.SupabaseAuthService.SupabaseUser principal,
+            @Valid @RequestBody CreateWorkoutExerciseRequest exReq) {
+        UUID userId = UUID.fromString(principal.id());
+
+        WorkoutExercise ex = exerciseRepo.findByIdAndWorkoutUserId(exId, userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Exercise not found or access denied"));
+
+        if (!ex.getWorkout().getId().equals(id)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Exercise does not belong to this workout");
+        }
+
+        ex.setSets(exReq.getSets());
+        ex.setReps(exReq.getReps());
+        ex.setWeightKg(exReq.getWeightKg());
+        return exerciseRepo.save(ex);
+    }
+
+    @DeleteMapping("/{id}/exercises/{exId}")
+    public Map<String, Object> deleteExercise(
+            @PathVariable Long id,
+            @PathVariable Long exId,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.cristislv1.backend.auth.SupabaseAuthService.SupabaseUser principal) {
+        UUID userId = UUID.fromString(principal.id());
+
+        WorkoutExercise ex = exerciseRepo.findByIdAndWorkoutUserId(exId, userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Exercise not found or access denied"));
+
+        if (!ex.getWorkout().getId().equals(id)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Exercise does not belong to this workout");
+        }
+
+        exerciseRepo.delete(ex);
+        return Map.of("deleted", exId);
     }
 
     @GetMapping

@@ -4,8 +4,11 @@ import com.cristislv1.backend.auth.SupabaseAuthService;
 import com.cristislv1.backend.profile.Profile;
 import com.cristislv1.backend.profile.ProfileRepository;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -60,5 +63,21 @@ public class WeightHistoryController {
         profileRepo.save(profile);
 
         return savedEntry;
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteWeight(
+            @AuthenticationPrincipal SupabaseAuthService.SupabaseUser user,
+            @PathVariable Long id) {
+
+        UUID userId = UUID.fromString(user.id());
+        WeightHistory entry = weightRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found"));
+
+        if (!entry.getUserId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your entry");
+        }
+        weightRepo.delete(entry);
+        return ResponseEntity.noContent().build();
     }
 }
